@@ -1,0 +1,251 @@
+{#
+===============================================================================
+VISTA PRINCIPAL / PORTADA INSTITUCIONAL (INDEX.HTML) - JINJA2 / HTML5
+===============================================================================
+
+Esta plantilla representa la página de aterrizaje (Landing Page) del sistema.
+Hereda de 'base.html' e implementa el bloque 'content':
+    extends "base.html"
+
+SECCIONES DE LA PÁGINA:
+----------------------
+1. Sección Hero (.hero-section): Presentación ejecutiva de la plataforma y botones
+   de llamada a la acción (Call to Action - CTA) hacia Herramientas y Dashboard.
+2. Sección de Capacidades (.features-grid): 6 tarjetas que describen la base técnica
+   del proyecto (Sockets, Concurrencia, IANA, SQLite, ReportLab, OSINT).
+3. Sección Quiénes Somos (#about): Fundamentos formativos y stack tecnológico.
+4. Sección Formulario de Contacto (#contact): Formulario dinámico procesado
+   mediante JavaScript asíncrono (Fetch API) con validación y alertas.
+#}
+{% extends "base.html" %}
+
+<!-- Título personalizado para la pestaña del navegador -->
+{% block title %}Inicio // ARTHASECURE - Inteligencia de Red & Auditoría Defensiva{% endblock %}
+
+{% block content %}
+<!-- ==========================================================================
+     SECCIÓN 1: HERO SECTION (PORTADA PRINCIPAL Y LLAMADA A LA ACCIÓN)
+     ========================================================================== -->
+<section class="hero-section">
+    <!-- Emblema de la Corona del Rey Exánime con Frostmourne -->
+    <div style="width: 90px; height: 90px; margin: 0 auto 1.5rem; filter: drop-shadow(0 0 24px rgba(168, 85, 247, 0.75)); transition: transform var(--transition-fast);">
+        <img src="{{ url_for('static', filename='img/arthasecure-logo.svg') }}" alt="Arthasecure Helm of Domination & Frostmourne" style="width: 100%; height: 100%; object-fit: contain;">
+    </div>
+
+    <!-- Etiqueta superior temática con icono místico / satelital -->
+    <div class="hero-tag">
+        <i class="fa-solid fa-crown" style="color: #c084fc;"></i> ARTHASECURE &bull; Inteligencia Defensiva &amp; Vulnerabilidades
+    </div>
+
+    <!-- Título principal con degradado tipográfico (.text-gradient) -->
+    <h1 class="hero-title">
+        Dominio y Auditoría de <span class="text-gradient">Redes &amp; Ciberseguridad</span>
+    </h1>
+
+    <!-- Subtítulo técnico descriptivo de los módulos del sistema -->
+    <p class="hero-subtitle">
+        Plataforma técnica para el rastreo y geolocalización OSINT de direcciones IPv4 e IPv6, escaneo no invasivo de puertos TCP, evaluación de vulnerabilidades críticas CVE y generación automatizada de informes forenses en PDF.
+    </p>
+
+    <!-- Botones de Acción Rápida: Redirigen mediante Flask url_for() -->
+    <div class="hero-actions">
+        <!-- Botón primario: Conduce a la consola de herramientas de auditoría en vivo -->
+        <a href="{{ url_for('tools') }}" class="btn btn-primary">
+            <i class="fa-solid fa-play"></i> Comenzar Análisis en Vivo
+        </a>
+        <!-- Botón secundario: Conduce al panel de control estadístico y gráficos -->
+        <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">
+            <i class="fa-solid fa-chart-pie"></i> Explorar Dashboard
+        </a>
+    </div>
+</section>
+
+<!-- ==========================================================================
+     SECCIÓN 2: GRID DE CAPACIDADES TÉCNICAS (CARDS)
+     ========================================================================== -->
+<section style="margin: 4rem 0;">
+    <div style="text-align: center; margin-bottom: 2.5rem;">
+        <h2 style="font-size: 2rem; font-weight: 800; color: var(--text-primary); margin-bottom: 0.5rem;">
+            Capacidades del Sistema
+        </h2>
+        <p style="color: var(--text-secondary); max-width: 600px; margin: 0 auto;">
+            Módulos modulares desarrollados bajo estándares RFC de telecomunicaciones y fundamentos de seguridad de la información.
+        </p>
+    </div>
+
+    <!-- Contenedor con distribución CSS Grid adaptable (.features-grid) -->
+    <div class="features-grid">
+        <!-- Tarjeta 1: Rastreo de IP -->
+        <div class="feature-card">
+            <div class="feature-icon">
+                <i class="fa-solid fa-location-crosshairs"></i>
+            </div>
+            <h3 class="feature-title">Rastreo de Direcciones IP</h3>
+            <p class="feature-desc">
+                Identificación de IPv4 e IPv6. Clasificación estricta de alcances públicos, privados (RFC 1918) y loopback, obteniendo país, región, coordenadas aproximadas y zona horaria sin comprometer rangos locales.
+            </p>
+        </div>
+
+        <!-- Tarjeta 2: Escaneo de Puertos -->
+        <div class="feature-card">
+            <div class="feature-icon">
+                <i class="fa-solid fa-network-wired"></i>
+            </div>
+            <h3 class="feature-title">Escaneo Concurrente de Puertos</h3>
+            <p class="feature-desc">
+                Sondeo TCP multihilo no bloqueante mediante sockets nativos. Detección precisa de estados (Abierto, Cerrado, Filtrado) y captura pasiva de banners con límites éticos de seguridad.
+            </p>
+        </div>
+
+        <!-- Tarjeta 3: Reconocimiento de Servicios -->
+        <div class="feature-card">
+            <div class="feature-icon">
+                <i class="fa-solid fa-server"></i>
+            </div>
+            <h3 class="feature-title">Catálogo de Servicios IANA</h3>
+            <p class="feature-desc">
+                Mapeo automático de servicios estándar conocidos (HTTP, HTTPS, SSH, FTP, RDP, MySQL, etc.) para correlacionar la superficie de exposición del host analizado.
+            </p>
+        </div>
+
+        <!-- Tarjeta 4: Dashboard Estadístico -->
+        <div class="feature-card">
+            <div class="feature-icon">
+                <i class="fa-solid fa-chart-column"></i>
+            </div>
+            <h3 class="feature-title">Dashboard Interactivo</h3>
+            <p class="feature-desc">
+                Panel centralizado con métricas globales en tiempo real: KPIs consolidados, gráficos con Chart.js, historial cronológico de auditorías y distribución de puertos abiertos.
+            </p>
+        </div>
+
+        <!-- Tarjeta 5: Reportes Automatizados PDF -->
+        <div class="feature-card">
+            <div class="feature-icon">
+                <i class="fa-solid fa-file-pdf"></i>
+            </div>
+            <h3 class="feature-title">Reportes PDF Automatizados</h3>
+            <p class="feature-desc">
+                Generación instantánea de informes técnicos en PDF mediante ReportLab, con encabezados corporativos, paginación dinámica, tablas detalladas y recomendaciones técnicas de seguridad.
+            </p>
+        </div>
+
+        <!-- Tarjeta 6: Arquitectura Segura -->
+        <div class="feature-card">
+            <div class="feature-icon">
+                <i class="fa-solid fa-database"></i>
+            </div>
+            <h3 class="feature-title">Persistencia y Auditoría</h3>
+            <p class="feature-desc">
+                Base de datos relacional SQLite organizada con consultas parametrizadas, garantizando integridad referencial y protección total contra inyecciones SQL.
+            </p>
+        </div>
+    </div>
+</section>
+
+<!-- ==========================================================================
+     SECCIÓN 3: QUIÉNES SOMOS & PROPÓSITO ACADÉMICO
+     ========================================================================== -->
+<!-- 'scroll-margin-top' evita que la barra de navegación tape el título al saltar con ancla (#about) -->
+<section id="about" style="margin: 5rem 0; scroll-margin-top: 100px;">
+    <div class="card" style="background: linear-gradient(145deg, #131b2e 0%, #0d1424 100%); border-color: rgba(59, 130, 246, 0.3);">
+        <div class="card-header" style="border-bottom-color: rgba(59, 130, 246, 0.2);">
+            <div class="card-title">
+                <i class="fa-solid fa-graduation-cap" style="color: var(--accent-cyan);"></i>
+                <span>Quiénes Somos &bull; Propósito y Alcance del Proyecto</span>
+            </div>
+            <span class="badge badge-info">Proyecto Universitario</span>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2.5rem; margin-top: 1.25rem;">
+            <!-- Columna Izquierda: Explicación de los principios de seguridad defensiva -->
+            <div>
+                <h3 style="font-size: 1.2rem; margin-bottom: 0.8rem; color: #60a5fa;">
+                    Propósito Académico y Formativo
+                </h3>
+                <p style="color: var(--text-secondary); margin-bottom: 1rem; font-size: 0.95rem;">
+                    Esta plataforma ha sido concebida y desarrollada como un proyecto de ingeniería de software y ciberseguridad aplicada, con el fin de demostrar la integración práctica de conceptos fundamentales: arquitectura web modular, protocolos de transporte (TCP/IP), concurrencia en Python, seguridad defensiva y visualización de datos.
+                </p>
+                <p style="color: var(--text-secondary); font-size: 0.95rem;">
+                    El sistema respeta los principios éticos de la seguridad informática: no realiza ataques de fuerza bruta ni explota vulnerabilidades; se enfoca en el reconocimiento autorizado y la recolección estructurada de telemetría de red.
+                </p>
+            </div>
+
+            <!-- Columna Derecha: Stack tecnológico detallado -->
+            <div>
+                <h3 style="font-size: 1.2rem; margin-bottom: 0.8rem; color: #60a5fa;">
+                    Stack Tecnológico Implementado
+                </h3>
+                <ul style="list-style: none; display: flex; flex-direction: column; gap: 0.65rem; color: var(--text-primary); font-size: 0.92rem;">
+                    <li><i class="fa-brands fa-python" style="color: #38bdf8; width: 20px;"></i> <b>Python 3:</b> Motor principal de análisis, sockets y concurrencia.</li>
+                    <li><i class="fa-solid fa-microchip" style="color: #60a5fa; width: 20px;"></i> <b>Flask:</b> Microframework web para enrutamiento y API REST.</li>
+                    <li><i class="fa-solid fa-database" style="color: #34d399; width: 20px;"></i> <b>SQLite:</b> Almacenamiento relacional estructurado con claves foráneas.</li>
+                    <li><i class="fa-solid fa-file-pdf" style="color: #f87171; width: 20px;"></i> <b>ReportLab:</b> Motor de compilación de informes técnicos PDF.</li>
+                    <li><i class="fa-brands fa-js" style="color: #fbbf24; width: 20px;"></i> <b>JavaScript &amp; Fetch API:</b> Peticiones asíncronas dinámicas sin recarga.</li>
+                    <li><i class="fa-solid fa-chart-pie" style="color: #a78bfa; width: 20px;"></i> <b>Chart.js:</b> Renderizado de gráficos estadísticos en tiempo real.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ==========================================================================
+     SECCIÓN 4: FORMULARIO DE CONTACTO DINÁMICO
+     ========================================================================== -->
+<section id="contact" style="margin: 5rem 0; scroll-margin-top: 100px;">
+    <div style="text-align: center; margin-bottom: 2rem;">
+        <h2 style="font-size: 2rem; font-weight: 800; color: var(--text-primary); margin-bottom: 0.5rem;">
+            Formulario de Contacto
+        </h2>
+        <p style="color: var(--text-secondary); max-width: 550px; margin: 0 auto;">
+            ¿Tienes dudas, sugerencias o requerimientos académicos sobre la plataforma? Envíanos tu mensaje y quedará registrado de forma segura en el backend.
+        </p>
+    </div>
+
+    <div class="card" style="max-width: 680px; margin: 0 auto;">
+        <!-- 
+          Contenedor de Alertas Dinámicas (#contactAlert):
+          JavaScript inyecta mensajes de éxito (.alert-success) o error (.alert-danger)
+          según la respuesta del endpoint POST /api/contact.
+        -->
+        <div id="contactAlert" style="display: none;"></div>
+
+        <!-- 
+          Formulario con atributo 'novalidate':
+          Deshabilita las burbujas nativas del navegador para que JavaScript
+          se encargue de la validación estilizada y el envío asíncrono con fetch().
+        -->
+        <form id="contactForm" novalidate>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <!-- Campo: Nombre Completo -->
+                <div class="form-group">
+                    <label for="contactName" class="form-label">Nombre Completo *</label>
+                    <input type="text" id="contactName" name="full_name" class="form-control" placeholder="Ej. Juan Pérez" required>
+                </div>
+                <!-- Campo: Correo Electrónico -->
+                <div class="form-group">
+                    <label for="contactEmail" class="form-label">Correo Electrónico *</label>
+                    <input type="email" id="contactEmail" name="email" class="form-control" placeholder="nombre@correo.com" required>
+                </div>
+            </div>
+
+            <!-- Campo: Asunto -->
+            <div class="form-group">
+                <label for="contactSubject" class="form-label">Asunto *</label>
+                <input type="text" id="contactSubject" name="subject" class="form-control" placeholder="Ej. Consulta sobre el módulo de escaneo" required>
+            </div>
+
+            <!-- Campo: Mensaje detallado -->
+            <div class="form-group">
+                <label for="contactMessage" class="form-label">Mensaje *</label>
+                <textarea id="contactMessage" name="message" class="form-control" placeholder="Escribe aquí tu consulta o comentario detallado..." required></textarea>
+            </div>
+
+            <!-- Botón de Envío con spinner dinámico en JavaScript (#contactSubmitBtn) -->
+            <button type="submit" id="contactSubmitBtn" class="btn btn-primary btn-block">
+                <i class="fa-solid fa-paper-plane"></i> Enviar Mensaje
+            </button>
+        </form>
+    </div>
+</section>
+{% endblock %}
