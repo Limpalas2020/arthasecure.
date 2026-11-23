@@ -201,16 +201,22 @@ if not exist "%~dp0public\reports" (
 :: ---------------------------------------------------------------------
 echo.
 echo =====================================================================
-echo  [+] INICIANDO SERVIDOR WEB EN: http://127.0.0.1:5000
-echo  [+] Abriendo la aplicacion automaticamente en tu navegador...
+echo  [+] Iniciando ARTHASECURE en modo LAN (0.0.0.0:5000).
+echo  [+] En este PC: http://127.0.0.1:5000
+echo  [+] La IP LAN se mostrara en esta consola al iniciar Flask.
+echo  [+] Para Internet, utiliza la URL publica de Render.
 echo.
-echo  [!] ATENCION: NO CIERRES ESTA VENTANA mientras uses la aplicacion.
-echo  [!] Para detener el servidor, presiona Ctrl + C en esta consola.
+echo  [!] Permite Python en el Firewall de Windows para redes PRIVADAS.
+echo  [!] No expongas el puerto 5000 directamente a Internet.
+echo  [!] No cierres esta ventana mientras uses la aplicacion.
+echo  [!] Para detener el servidor, presiona Ctrl + C.
 echo =====================================================================
 echo.
 
 start "" cmd /c "timeout /t 2 /nobreak >nul & start http://127.0.0.1:5000"
 
+set "HOST=0.0.0.0"
+set "PORT=5000"
 %PY_CMD% "%~dp0app.py"
 
 echo.

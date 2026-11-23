@@ -30,6 +30,8 @@ ARQUITECTURA Y FLUJO DE COMUNICACIÓN (MODELO - VISTA - CONTROLADOR):
 # ==============================================================================
 import os                      # Interacción con el sistema operativo (cálculo de rutas absolutas).
 import ipaddress
+import secrets
+import socket
 from functools import wraps
 from datetime import datetime  # Gestión de fechas para inyección global en plantillas.
 
@@ -74,15 +76,35 @@ app = Flask(
     static_folder=STATIC_DIR
 )
 
-# Clave secreta fija/estable para la gestión de sesiones criptográficas y protección CSRF.
-# Una clave fija evita que las sesiones se cierren automáticamente cada vez que el servidor se reinicia.
+# Detección automática del entorno: Render/hosting público frente a ejecución local.
+# En producción HTTPS las cookies deben ser Secure; en LAN por HTTP deben poder viajar.
+IS_PUBLIC_DEPLOYMENT = (
+    os.environ.get("RENDER", "").lower() == "true"
+    or bool(os.environ.get("RENDER_SERVICE_ID"))
+    or bool(os.environ.get("RENDER_EXTERNAL_URL"))
+    or os.environ.get("APP_ENV", "").lower() == "production"
+)
 secret_key = os.environ.get("FLASK_SECRET_KEY")
 if not secret_key:
-    raise RuntimeError("Falta configurar FLASK_SECRET_KEY en las variables de entorno.")
+    if IS_PUBLIC_DEPLOYMENT:
+        raise RuntimeError("Falta configurar FLASK_SECRET_KEY en las variables de entorno del hosting.")
+    # En Windows/LAN guardamos una clave local ignorada por Git para conservar
+    # la sesión de prueba gratuita aunque se reinicie el servidor.
+    local_key_path = os.path.join(BASE_DIR, ".flask_secret_key")
+    try:
+        if os.path.isfile(local_key_path):
+            with open(local_key_path, "r", encoding="utf-8") as key_file:
+                secret_key = key_file.read().strip()
+        else:
+            secret_key = secrets.token_hex(32)
+            with open(local_key_path, "w", encoding="utf-8") as key_file:
+                key_file.write(secret_key)
+    except OSError:
+        secret_key = secrets.token_hex(32)
 
 app.config.update(
     SECRET_KEY=secret_key,
-    SESSION_COOKIE_SECURE=True,
+    SESSION_COOKIE_SECURE=IS_PUBLIC_DEPLOYMENT,
     SESSION_COOKIE_HTTPONLY=True,
     SESSION_COOKIE_SAMESITE="Lax",
 )
@@ -108,8 +130,12 @@ def login_required(view):
     return wrapped_view
 
 
-def validate_public_target(target):
-    """Solo permite destinos públicos; el servidor remoto no debe sondear redes privadas."""
+def validate_scan_target(target):
+    """Valida el objetivo y aplica límites distintos según dónde se ejecuta la app.
+
+    En LAN se admiten IP privadas para que el operador audite su propia red.
+    En hosting público se bloquean loopback, privadas, link-local y rangos especiales.
+    """
     valid, resolved_ip, _, err_msg = ip_tracker.validate_and_parse_target(target)
     if not valid:
         return False, None, err_msg
@@ -117,8 +143,8 @@ def validate_public_target(target):
         address = ipaddress.ip_address(resolved_ip)
     except ValueError:
         return False, None, "No se pudo validar la dirección IP resuelta."
-    if not address.is_global:
-        return False, None, "En el servicio publicado solo se permiten objetivos IP públicos y autorizados."
+    if IS_PUBLIC_DEPLOYMENT and not address.is_global:
+        return False, None, "En el servicio web solo se permiten objetivos IP públicos y autorizados. Para analizar la LAN, ejecuta ARTHASECURE en un equipo de esa red."
     return True, resolved_ip, None
 
 
@@ -176,7 +202,6 @@ def index():
 
 
 @app.route("/tools")
-@login_required
 def tools():
     """
     Consola interactiva de auditoría (Rastreo IP y Escaneo de Puertos TCP).
@@ -313,7 +338,6 @@ def api_user_status():
 # ==============================================================================
 
 @app.route("/api/track-ip", methods=["POST"])
-@login_required
 def api_track_ip():
     """
     Endpoint REST para el análisis y geolocalización de direcciones IP.
@@ -347,7 +371,7 @@ def api_track_ip():
             return jsonify({
                 "success": False,
                 "limit_reached": True,
-                "error": f"Has alcanzado el límite de {FREE_TIER_LIMIT} análisis de la Prueba Gratuita. Inicia sesión con tu cuenta de pago (admin / admin) para disfrutar de análisis ilimitados.",
+                "error": f"Has alcanzado el límite de {FREE_TIER_LIMIT} análisis de la Prueba Gratuita. Inicia sesión con una cuenta autorizada para continuar con análisis ilimitados.",
                 "free_limit": FREE_TIER_LIMIT,
                 "free_usage_count": usage_count,
                 "free_usage_left": 0
@@ -363,7 +387,7 @@ def api_track_ip():
         }), 400
 
     # En un servidor público no se permiten IP privadas, loopback ni rangos especiales.
-    target_ok, resolved_ip, target_error = validate_public_target(target)
+    target_ok, resolved_ip, target_error = validate_scan_target(target)
     if not target_ok:
         return jsonify({"success": False, "error": target_error}), 400
 
@@ -412,7 +436,6 @@ def api_track_ip():
 
 
 @app.route("/api/scan-ports", methods=["POST"])
-@login_required
 def api_scan_ports():
     """
     Endpoint REST para el escaneo concurrente de puertos TCP.
@@ -449,7 +472,7 @@ def api_scan_ports():
             return jsonify({
                 "success": False,
                 "limit_reached": True,
-                "error": f"Has alcanzado el límite de {FREE_TIER_LIMIT} análisis de la Prueba Gratuita. Inicia sesión con tu cuenta de pago (admin / admin) para disfrutar de análisis ilimitados.",
+                "error": f"Has alcanzado el límite de {FREE_TIER_LIMIT} análisis de la Prueba Gratuita. Inicia sesión con una cuenta autorizada para continuar con análisis ilimitados.",
                 "free_limit": FREE_TIER_LIMIT,
                 "free_usage_count": usage_count,
                 "free_usage_left": 0
@@ -484,7 +507,7 @@ def api_scan_ports():
         ports_to_scan = port_scanner.PRESET_PORTS["essential"]
 
     # Validación del host y bloqueo de redes privadas/especiales en el servidor público.
-    target_ok, resolved_ip, target_error = validate_public_target(target)
+    target_ok, resolved_ip, target_error = validate_scan_target(target)
     if not target_ok:
         return jsonify({"success": False, "error": target_error}), 400
 
@@ -545,7 +568,6 @@ def api_scan_ports():
 
 
 @app.route("/api/generate-pdf", methods=["POST"])
-@login_required
 def api_generate_pdf():
     """
     Endpoint REST para compilar dinámicamente el informe PDF de auditoría.
@@ -584,6 +606,11 @@ def api_generate_pdf():
             filename=filename,
             file_path=pdf_path
         )
+        user_id = session.get("user_id")
+        if not (user_id and database.get_user_by_id(user_id)):
+            trial_reports = session.get("trial_report_ids", [])
+            trial_reports.append(report_id)
+            session["trial_report_ids"] = trial_reports[-10:]
 
         return jsonify({
             "success": True,
@@ -599,7 +626,6 @@ def api_generate_pdf():
 
 
 @app.route("/reports/download/<int:report_id>", endpoint="download_report")
-@login_required
 def download_report(report_id):
     """
     Endpoint para la descarga binaria segura de informes PDF emitidos.
@@ -614,6 +640,11 @@ def download_report(report_id):
     report = database.get_pdf_report_by_id(report_id)
     if not report:
         abort(404, description="El informe solicitado no existe en la base de datos.")
+
+    user_id = session.get("user_id")
+    is_auth = bool(user_id and database.get_user_by_id(user_id))
+    if not is_auth and report_id not in session.get("trial_report_ids", []):
+        abort(403, description="Este informe no pertenece a tu sesión de prueba.")
 
     file_path = report["file_path"]
     if not os.path.isfile(file_path):
@@ -711,11 +742,23 @@ def internal_error(error):
 # BLOQUE DE ARRANQUE EN MODO LOCAL / DESARROLLO
 # ==============================================================================
 if __name__ == "__main__":
-    print("==================================================================")
-    print(" CIBER-ANALYZER // Plataforma de Análisis y Ciberseguridad")
-    print(" Servidor iniciado en http://127.0.0.1:5000")
-    print(" Presione Ctrl + C para detener el servicio.")
-    print("==================================================================")
-    # host='127.0.0.1' restringe el acceso al equipo local (loopback) para máxima seguridad
-    # debug=True activa la recarga automática en caliente ante cambios de código
-    app.run(host="127.0.0.1", port=5000, debug=False)
+    host = os.environ.get("HOST", "0.0.0.0")
+    port = int(os.environ.get("PORT", "5000"))
+    lan_ip = "No detectada"
+    try:
+        probe = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        probe.connect(("192.0.2.1", 80))  # Solo consulta la interfaz/ruta local; no envía datos.
+        lan_ip = probe.getsockname()[0]
+        probe.close()
+    except OSError:
+        pass
+
+    print("=" * 68)
+    print(" ARTHASECURE 1.5 // SERVIDOR LOCAL Y LAN")
+    print(f" En este PC:  http://127.0.0.1:{port}")
+    if lan_ip != "No detectada":
+        print(f" En la LAN:   http://{lan_ip}:{port}")
+    print(" Para Internet, utiliza la URL HTTPS de tu despliegue en Render.")
+    print(" Detener: Ctrl + C")
+    print("=" * 68)
+    app.run(host=host, port=port, debug=False)
